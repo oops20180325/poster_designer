@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    @font-face {
+      font-family: 'webfont';
+      font-display: swap;
+      src: url('//at.alicdn.com/t/webfont_kub56wuw4ak.eot'); /* IE9*/
+      src: url('//at.alicdn.com/t/webfont_kub56wuw4ak.eot?#iefix') format('embedded-opentype'), /* IE6-IE8 */
+      url('//at.alicdn.com/t/webfont_kub56wuw4ak.woff2') format('woff2'),
+      url('//at.alicdn.com/t/webfont_kub56wuw4ak.woff') format('woff'), /* chrome、firefox */
+      url('//at.alicdn.com/t/webfont_kub56wuw4ak.ttf') format('truetype'), /* chrome、firefox、opera、Safari, Android, iOS 4.2+*/
+      url('//at.alicdn.com/t/webfont_kub56wuw4ak.svg#思源黑体-极细') format('svg'); /* iOS 4.1- */
+    }
+
+    @font-face {
+      font-family: 'yingfeng';
+      src: url('./ShangShouYingFengShouXieTi-2.ttf');
+    }
+    
+    /* 浏览器优化：自定义字体如果页面里没有使用的话浏览器是不会预先加载的（这里指的是自定义字体，因为系统字体自带了不用加载） */
+    *{
+      /* font-family:"yingfeng" !important; */
+      font-family:"Microsoft YaHei"
+    }
+  </style>
+  <script src="./fabric.4.4.0.js"></script>
+  <script src="./fontFamilyLoader.js"></script>
+</head>
+<body>
+  <canvas id="can" width="800" height="500" style="border: 1px solid #ccc;"></canvas>
+  <button id="btn1">添加矩形</button>
+  <button id="btn2">添加圆</button>
+  <button id="btn3">添加三角</button>
+  <button id="btn4">添加文字</button>
+  添加图片: <input id="btn5" type="file" name="img" accept="image/*">
+  <button id="btn6">取消选中</button>
+  <button id="btn7">预加载字体</button>
+  <br/>
+  <button id="btn8">转化为json</button>
+</body>
+</html>
+<script>
+  function $(el){
+    return document.querySelector(el)
+  }
+
+  $('#btn1').addEventListener('click',()=>{
+    addRect({
+      top:100,
+      left:200,
+      width:50,
+      height:50,
+      fill:'red'
+    })
+  })
+
+  $('#btn2').addEventListener('click',()=>{
+    addCircle({
+      top:100,
+      left:200,
+      radius:90,
+      fill:'blue'
+    })
+  })
+
+  $('#btn3').addEventListener('click',()=>{
+    addTriangle({
+      top:100,
+      left:200,
+      width:50,
+      height:50,
+      fill:'#882c4a'
+    })
+  })
+
+  $('#btn4').addEventListener('click',()=>{
+    addText("hellow \n World abcd 哈哈",{
+      fontFamily: '黑体',
+      fontSize: 40,
+      fontWeight: 'bold',
+      shadow: 'rgba(0,0,0,0.6) 5px 5px 5px',
+      fontStyle: 'italic',
+    })
+  })
+  $('#btn5').addEventListener('change',async(e)=>{
+    console.log(e)
+    let file = e.target.files[0];
+    let ImgURL = await uploadImgAssets(file);
+    addImg(ImgURL,{
+      width:120,
+      height:100,
+      left:150,
+      top:200
+    })
+  })
+  $('#btn6').addEventListener('click',()=>{
+    discardSelect()
+  })
+  $('#btn7').addEventListener('click',()=>{
+    let fontName = "yingfeng";
+    // let fontName = "webfont";
+    loadFont(fontName,()=>{
+      try{
+        canvas.getActiveObject().set("fontFamily", fontName);
+        canvas.requestRenderAll();
+      }catch{
+        console.log("当前没有选中对象")
+      }
+    })
+  })
+  
+  $('#btn8').addEventListener('click',()=>{
+    let json = toJSON();
+    console.log(json)
+  })
+</script>
+<script>
+  //  当前选中对象
+  let currentObj;
+  // 创建字体是的初始化字体设置
+  let currentFontFamily = "Microsoft YaHei";
+  //画布
+   var canvas = new fabric.Canvas('can',{
+    preserveObjectStacking:true, // 保留初始堆叠
+   });
+  //  矩形
+   function addRect(options={}){
+    let rect = new fabric.Rect(options);
+    canvas.add(rect);
+   }
+  //  
+  function addCircle(options={}){
+    let rect = new fabric.Circle(options);
+    canvas.add(rect);
+   }
+  // 三角形
+  function addTriangle(options={}){
+    let Triangle = new fabric.Triangle(options);
+    canvas.add(Triangle);
+  }
+  //文字
+  function addText(content,options={}){
+    let text = new fabric.IText(content,options);
+    canvas.add(text)
+  }
+  // 添加图片
+  function addImg(FileUrl,options={}){
+    // var imgInstance = new fabric.Image(File, options);
+    // canvas.add(imgInstance);
+    fabric.Image.fromURL(FileUrl, function(oImg) {
+      oImg.set({
+        top:200,
+        left:200
+      })
+      canvas.add(oImg);
+    });
+  }
+
+  // 取消选中
+  function discardSelect(){
+    canvas.discardActiveObject();
+    canvas.requestRenderAll();
+  }
+  // 预加载字体
+  function loadFont(fontfamilyName,callback){
+    var myfont = new FontFaceObserver(fontfamilyName);
+    myfont.load().then(()=>{
+      if(callback)callback()
+    });
+  }
+  // 转化为JSON
+  function toJSON(withDefaults=false){
+    // 是否包含默认值
+    canvas.includeDefaultValues = withDefaults;
+    const json =  canvas.toJSON();
+    return json
+  }
+</script>
+<script>
+  // 图片工具
+  /**
+ * 上传图片
+ * 选择图片后应先上传到服务器获取图片url后再在编辑器中使用
+ * 由于该项目只有前端
+ * 所以直接返回图片的src
+ * @param {File} imgFile
+ */
+function uploadImgAssets(imgFile) {
+  console.log('图片已上传---本地测试用')
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      resolve(reader.result)
+    }
+    reader.onerror = reject
+    reader.readAsDataURL(imgFile)
+  })
+}
+</script>
